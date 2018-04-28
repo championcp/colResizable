@@ -13,7 +13,8 @@
 */
 
 (function($){ 	
-	
+	//header table
+	var _headerTable;
 	//IE8 Polyfill
 	if(!Array.indexOf) { Array.prototype.indexOf = function(obj) { for(var i=0; i<this.length;i++){if(this[i]==obj){return i;}} return -1; }}
 	
@@ -49,6 +50,7 @@
 	 */
 	var init = function( tb, options){	
 		var t = $(tb);				    //the table object is wrapped
+		_headerTable = $(tb).parent().prev().find(".dataTable"); // find the header table
         t.opt = options;                //each table has its own options available at anytime
         t.mode = options.resizeMode;    //shortcuts
         t.dc = t.opt.disabledColumns;
@@ -66,6 +68,7 @@
 		t.b  = I(ie? tb.border || tb.currentStyle.borderLeftWidth :t.css('border-left-width'))||1;	//outer border width (again cross-browser issues)
 		// if(!(tb.style.width || tb.width)) t.width(t.width()); //I am not an IE fan at all, but it is a pity that only IE has the currentStyle attribute working as expected. For this reason I can not check easily if the table has an explicit width or if it is rendered as "auto"
 		tables[id] = t; 	//the table object is stored using its id as key	
+		tables['__header__'] = _headerTable;
 		createGrips(t);		//grips are created 
 	
 	};
@@ -200,14 +203,18 @@
 	*/
 	var syncCols = function(t,i,isOver){
 		var inc = drag.x-drag.l, c = t.c[i], c2 = t.c[i+1]; 			
+		var _cHeader = $(_headerTable).find("th").eq(i), _cHeader2 = $(_headerTable).find("th").eq(i+1);
 		var w = c.w + inc;	var w2= c2.w- inc;	//their new width is obtained					
-		c.width( w + PX);			
+		c.width( w + PX);	
+		_cHeader.width(w + PX);		
 		t.cg.eq(i).width( w + PX); 
         if(t.f){ //if fixed mode
             c2.width(w2 + PX);
+            _cHeader2.width(w2 + PX);
             t.cg.eq(i+1).width( w2 + PX);
         }else if(t.opt.overflow) {				//if overflow is set, incriment min-width to force overflow
             t.css('min-width', t.w + inc);
+            _headerTable.css('min-width', t.w + inc);
         }
 		if(isOver){
             c.w=w; 
@@ -229,6 +236,7 @@
         t.width(t.w = t.width()).removeClass(FLEX);	//prevent table width changes
         $.each(t.c, function(i,c){
             c.width(w[i]).w = w[i];				//set column widths applying bounds (table's max-width)
+            $(_headerTable).find("th").eq(i).width(w[i]);
         });
 		t.addClass(FLEX);						//allow table width changes
 	};
@@ -294,8 +302,10 @@
             var i = drag.i;                 //column index
             var last = i == t.ln-1;         //check if it is the last column's grip (usually hidden)
             var c = t.g[i].c;               //the column being dragged
+            var _cHeader = $(_headerTable).find("th").eq(i);
             if(last){
                 c.width(drag.w);
+                _cHeader.width(drag.w);
                 c.w = drag.w;
             }else{
                 syncCols(t, i, true);	//the columns are updated
@@ -377,7 +387,7 @@
 			
 				//attributes:
                 
-                resizeMode: 'fit',                    //mode can be 'fit', 'flex' or 'overflow'
+                resizeMode: 'overflow',                    //mode can be 'fit', 'flex' or 'overflow'
                 draggingClass: 'JCLRgripDrag',	//css-class used when a grip is being dragged (for visual feedback purposes)
 				gripInnerHtml: '',				//if it is required to use a custom grip it can be done using some custom HTML				
 				liveDrag: false,				//enables table-layout updating while dragging	
@@ -415,4 +425,3 @@
         }
     });
 })(jQuery);
-
